@@ -121,7 +121,7 @@ code { background: #f5f5f5; padding: 1px 6px; border-radius: 4px; font-size: 12p
 <div id="app-screen" class="shell" style="display:none;">
   <div class="header">
     <div><div class="header-title">🔦 Kiểm tra OQC hàng thành phẩm</div>
-    <div class="header-sub">WI-QC-022/003 · ANSI/ASQ Z1.4 · 12 ảnh bắt buộc · <strong>v1</strong></div></div>
+    <div class="header-sub">WI-QC-022/003 · ANSI/ASQ Z1.4 · 15 ảnh bắt buộc · <strong>v1</strong></div></div>
     <button class="btn-sm" onclick="resetSetup()">⚙ Đổi kết nối</button>
   </div>
   <div class="tabs">
@@ -169,13 +169,7 @@ code { background: #f5f5f5; padding: 1px 6px; border-radius: 4px; font-size: 12p
 
     <div id="items"></div>
 
-    <div class="card" style="margin-top:14px" id="bc-card">
-      <div class="section-title">Scan barcode <span class="req">* bắt buộc đủ 3 ô</span></div>
-      <div class="hint" style="margin-bottom:10px">Dùng máy quét (mã tự điền vào ô, Enter để sang ô kế tiếp), nhập tay, hoặc bấm 📷 để quét bằng camera.</div>
-      <div id="bc-fields"></div>
-    </div>
-
-    <div class="card">
+    <div class="card" style="margin-top:14px">
       <div class="section-title">Ảnh bằng chứng bắt buộc <span id="photo-count" class="hint"></span></div>
       <div class="photo-grid" id="photo-grid"></div>
     </div>
@@ -225,7 +219,7 @@ code { background: #f5f5f5; padding: 1px 6px; border-radius: 4px; font-size: 12p
 </div>
 
 <div class="toast hide" id="toast"></div>
-<div class="lb" id="lb" onclick="closeLB()"><img id="lb-img" alt="" style="display:none"><video id="lb-video" playsinline muted style="display:none"></video></div>
+<div class="lb" id="lb" onclick="closeLB()"><img id="lb-img" alt="" style="display:none"></div>
 <input type="file" id="cam-in" accept="image/*" capture="environment" style="display:none">
 <input type="file" id="gal-in" accept="image/*" style="display:none">
 
@@ -236,7 +230,7 @@ var API_URL = "";
 var BARCODE_ITEM = "12.5";
 var CLASSES = [{code:"CR/A",key:"CR",name:"Critical",aql:0},{code:"MAJ/B",key:"MAJ",name:"Major",aql:0.65},{code:"MIN/C",key:"MIN",name:"Minor",aql:1.5},{code:"OBS/D",key:"OBS",name:"Observation",aql:6.5}];
 var PHOTO_SLOTS = [];   // từ server (getConfig); mặc định bên dưới nếu server cũ
-var DEFAULT_SLOTS = [{key:"master",en:"Master box",vi:"Thùng master box"},{key:"inner",en:"Inner box",vi:"Thùng inner box"},{key:"manual",en:"Instruction sheet",vi:"Sách hướng dẫn"},{key:"pack",en:"Packaging material",vi:"Bao bì đóng gói"},{key:"front",en:"Product - front",vi:"Mặt trước sản phẩm"},{key:"back",en:"Product - back",vi:"Mặt sau sản phẩm"},{key:"dob",en:"DOB / Driver",vi:"DOB / Driver"},{key:"label1",en:"Label #1",vi:"Tem nhãn #1"},{key:"label2",en:"Label #2",vi:"Tem nhãn #2"},{key:"lit",en:"Lighting test (lit)",vi:"Ảnh test đèn đang sáng"},{key:"hipot",en:"Hi-pot test",vi:"Ảnh test hipot"},{key:"lumen",en:"Lumen test",vi:"Ảnh test lumen"}];
+var DEFAULT_SLOTS = [{key:"master",en:"Master box",vi:"Thùng master box"},{key:"inner",en:"Inner box",vi:"Thùng inner box"},{key:"manual",en:"Instruction sheet",vi:"Sách hướng dẫn"},{key:"pack",en:"Packaging material",vi:"Bao bì đóng gói"},{key:"front",en:"Product - front",vi:"Mặt trước sản phẩm"},{key:"back",en:"Product - back",vi:"Mặt sau sản phẩm"},{key:"dob",en:"DOB / Driver",vi:"DOB / Driver"},{key:"label1",en:"Label #1",vi:"Tem nhãn #1"},{key:"label2",en:"Label #2",vi:"Tem nhãn #2"},{key:"lit",en:"Lighting test (lit)",vi:"Ảnh test đèn đang sáng"},{key:"hipot",en:"Hi-pot test",vi:"Ảnh test hipot"},{key:"lumen",en:"Lumen test",vi:"Ảnh test lumen"},{key:"bcinner",en:"Barcode - inner box",vi:"Ảnh barcode thùng inner"},{key:"bcmaster",en:"Barcode - master box",vi:"Ảnh barcode thùng master"},{key:"bcpo",en:"Barcode - PO label",vi:"Ảnh barcode tem PO"}];
 var LISTS = { fil: [], customer: [] };
 var ITEMS = [];
 var S = { editId: null, res: {}, bc: {inner:"",master:"",po:""}, photos: {} };   // photos[key] = {base64,w,h,dataUrl}
@@ -327,7 +321,7 @@ function resetEntryForm() {
   ["f-fil","f-po","f-customer","f-prod","f-lot","f-inspector","f-reviewer","f-solnote","f-notes"].forEach(function(id){ $(id).value = ""; });
   $("f-line").value = ""; $("f-level").value = "I"; $("f-solution").value = ""; $("f-date").value = today();
   $("edit-banner").style.display = "none"; $("update-btn").style.display = "none"; $("submit-btn").textContent = "📄 Lưu & xuất báo cáo"; $("report-result").innerHTML = "";
-  renderItems(); renderBarcodes(); renderPhotos(); onInfo();
+  renderItems(); renderPhotos(); onInfo();
 }
 function info() {
   return { filCode: $("f-fil").value.trim(), po: $("f-po").value.trim(), customer: $("f-customer").value.trim(), line: $("f-line").value,
@@ -367,12 +361,6 @@ function itemHTML(it) {
    + '<div><label class="lbl">Mô tả lỗi</label><input type="text" value="'+esc(r.desc)+'" oninput="S.res[\''+it.id+'\'].desc=this.value" placeholder="VD: xước lens, thiếu vít…"></div></div>';
   return h + '</div>';
 }
-function renderBarcodes() {
-  $("bc-fields").innerHTML = [["inner","Thùng inner"],["master","Thùng master"],["po","Tem PO"]].map(function(b, i, a){
-    return '<div class="scan-row"><label>'+b[1]+'</label><input type="text" id="bc-'+b[0]+'" value="'+esc(S.bc[b[0]])+'" autocomplete="off" placeholder="Scan barcode '+b[1].toLowerCase()+'..." '
-      + 'oninput="S.bc[\''+b[0]+'\']=this.value.trim();this.classList.remove(\'bad\')" onkeydown="bcKey(event,\''+(a[i+1]?a[i+1][0]:"")+'\')">'
-      + '<button class="btn-sm" type="button" onclick="scanCam(\''+b[0]+'\')">📷 Quét</button></div>'; }).join("");
-}
 function renderItems() {
   var h = "", g = null;
   ITEMS.forEach(function(it) {
@@ -383,28 +371,10 @@ function renderItems() {
 }
 function redrawItem(id) { var el = $("it-" + id.replace(".","_")), it = ITEMS.filter(function(x){ return x.id === id; })[0]; var t = document.createElement("div"); t.innerHTML = itemHTML(it); el.replaceWith(t.firstElementChild); onInfo(); }
 function setRes(id, v) { var r = S.res[id]; r.result = v; if (v === "OK") { r.qty = ""; r.desc = ""; } redrawItem(id); }
-function bcKey(e, nextKey) { if (e.key === "Enter") { e.preventDefault(); if (nextKey && $("bc-" + nextKey)) $("bc-" + nextKey).focus(); else e.target.blur(); } }
+function closeLB() { $("lb").classList.remove("open"); }
+function zoomPhoto(key) { var p = S.photos[key]; if (!p) return; $("lb-img").src = p.dataUrl; $("lb-img").style.display = "block"; $("lb").classList.add("open"); }
 
-// ── Barcode: camera scan (BarcodeDetector), fallback = máy quét / nhập tay ──
-var scanStream = null, scanTimer = null;
-async function scanCam(key) {
-  if (!("BarcodeDetector" in window) || !navigator.mediaDevices) { showToast("Trình duyệt chưa hỗ trợ quét bằng camera — dùng máy quét hoặc nhập tay", "error"); $("bc-" + key).focus(); return; }
-  try {
-    var det = new BarcodeDetector(), v = $("lb-video");
-    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-    v.srcObject = scanStream; v.style.display = "block"; $("lb-img").style.display = "none"; $("lb").classList.add("open"); await v.play();
-    scanTimer = setInterval(async function() {
-      try { var codes = await det.detect(v); if (codes.length) { var val = codes[0].rawValue; $("bc-" + key).value = val; S.bc[key] = val; $("bc-" + key).classList.remove("bad"); closeLB(); showToast("Đã quét: " + val); } } catch(e) {}
-    }, 300);
-  } catch(e) { closeLB(); showToast("Không mở được camera: " + e.message, "error"); }
-}
-function closeLB() {
-  clearInterval(scanTimer); if (scanStream) { scanStream.getTracks().forEach(function(t){ t.stop(); }); scanStream = null; }
-  var v = $("lb-video"); v.srcObject = null; v.style.display = "none"; $("lb-img").style.display = "none"; $("lb").classList.remove("open");
-}
-function zoomPhoto(key) { var p = S.photos[key]; if (!p) return; $("lb-img").src = p.dataUrl; $("lb-img").style.display = "block"; $("lb-video").style.display = "none"; $("lb").classList.add("open"); }
-
-// ── 12 ảnh bắt buộc ──
+// ── 15 ảnh bắt buộc ──
 function renderPhotos() {
   $("photo-grid").innerHTML = PHOTO_SLOTS.map(function(s, i) {
     var p = S.photos[s.key];
@@ -447,7 +417,6 @@ function validate(exportMode) {
   var itemMiss = [];
   ITEMS.forEach(function(it) { var r = S.res[it.id], bad = !r.result || (r.result === "NG" && !(parseInt(r.qty, 10) >= 1)); var el = $("it-" + it.id.replace(".","_")); if (el) el.classList.toggle("miss", bad); if (bad) itemMiss.push(it.id); });
   var bcMiss = [];
-  if (exportMode) ["inner","master","po"].forEach(function(k){ var e = $("bc-" + k); if (!S.bc[k]) { bcMiss.push(k); if (e) e.classList.add("bad"); } });
   var photoMiss = exportMode ? PHOTO_SLOTS.filter(function(s){ return !S.photos[s.key]; }) : [];
   PHOTO_SLOTS.forEach(function(s){ var el = $("slot-" + s.key); if (el) el.classList.toggle("need", exportMode && !S.photos[s.key]); });
   return { info: i, miss: miss, itemMiss: itemMiss, bcMiss: bcMiss, photoMiss: photoMiss };
@@ -456,7 +425,6 @@ async function submitEntry(exportMode) {
   var v = validate(exportMode);
   if (v.miss.length) { showToast("Vui lòng nhập đủ FIL code / Line / Ngày / Số lượng lô / Người kiểm tra", "error"); $(v.miss[0]).scrollIntoView({behavior:"smooth",block:"center"}); return; }
   if (v.itemMiss.length) { showToast("Còn " + v.itemMiss.length + " hạng mục chưa có kết quả hoặc thiếu số lượng lỗi (viền đỏ)", "error"); $("it-" + v.itemMiss[0].replace(".","_")).scrollIntoView({behavior:"smooth",block:"center"}); return; }
-  if (v.bcMiss.length) { showToast("Cần scan đủ 3 barcode: thùng inner, thùng master, tem PO", "error"); $("bc-card").scrollIntoView({behavior:"smooth",block:"center"}); return; }
   if (v.photoMiss.length) { showToast("Thiếu ảnh bắt buộc: " + v.photoMiss.map(function(s){ return s.vi; }).join(", "), "error"); $("slot-" + v.photoMiss[0].key).scrollIntoView({behavior:"smooth",block:"center"}); return; }
 
   var payload = { action: "submit", export: !!exportMode, id: S.editId, report: v.info, barcodes: S.bc,
@@ -505,9 +473,9 @@ async function editById(id) {
     r.results.forEach(function(x){ if (S.res[x.itemId]) S.res[x.itemId] = { result: x.result, qty: x.qty || "", desc: x.desc || "" }; });
     [["f-fil",R.filCode],["f-po",R.po],["f-customer",R.customer],["f-line",R.line],["f-prod",R.productionDate],["f-date",R.inspectionDate],["f-lot",R.lotQty],["f-level",R.level],["f-inspector",R.inspector],["f-reviewer",R.reviewer],["f-solution",R.solution],["f-solnote",R.solutionNote],["f-notes",R.notes]]
       .forEach(function(p){ $(p[0]).value = p[1] == null ? "" : p[1]; });
-    $("edit-banner").style.display = "flex"; $("edit-banner-text").textContent = "Đang sửa báo cáo " + id + " — muốn xuất lại báo cáo cần chụp lại đủ 12 ảnh.";
+    $("edit-banner").style.display = "flex"; $("edit-banner-text").textContent = "Đang sửa báo cáo " + id + " — muốn xuất lại báo cáo cần chụp lại đủ 15 ảnh.";
     $("update-btn").style.display = "block"; $("submit-btn").textContent = "📄 Lưu & xuất lại báo cáo mới";
-    renderItems(); renderBarcodes(); renderPhotos(); onInfo(); switchTab("entry"); window.scrollTo(0, 0);
+    renderItems(); renderPhotos(); onInfo(); switchTab("entry"); window.scrollTo(0, 0);
   } catch(e) { showToast("Lỗi: " + e.message, "error"); }
 }
 async function deleteById(id) {
