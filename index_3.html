@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OQC – Kiểm tra hàng thành phẩm</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f4f5f7;--card:#fff;--bd:#e3e5e8;--tx:#15171a;--mu:#6b7280;--pri:#0f766e;--ok:#15803d;--ng:#b91c1c;--warn:#b45309}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px}
+.shell{max-width:860px;margin:0 auto;padding:16px 14px 120px}
+input,select,textarea{width:100%;padding:10px 11px;font-size:15px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:var(--tx);font-family:inherit;outline:none}
+textarea{resize:vertical;min-height:60px}
+input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 2px #0f766e22}
+.bad{border-color:var(--ng)!important;background:#fef2f2}
+button{font-family:inherit;cursor:pointer}
+.header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}
+.h-title{font-size:19px;font-weight:700}.h-sub{font-size:12px;color:var(--mu);margin-top:2px}
+.btn{background:#fff;border:1px solid #d1d5db;border-radius:8px;padding:8px 13px;font-size:13px;color:var(--tx)}
+.btn:hover{background:#f3f4f6}
+.btn-pri{background:var(--pri);color:#fff;border:none;border-radius:10px;padding:13px 20px;font-size:15px;font-weight:600;width:100%}
+.btn-pri:disabled{opacity:.4;cursor:not-allowed}
+.btn-red{color:var(--ng);border-color:#fecaca}
+.tabs{display:flex;border-bottom:1px solid var(--bd);margin-bottom:16px;overflow-x:auto}
+.tab{padding:10px 16px;font-size:14px;font-weight:600;color:var(--mu);background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab.active{color:var(--pri);border-bottom-color:var(--pri)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:12px}
+.card h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.lbl{font-size:12px;color:var(--mu);display:block;margin-bottom:5px}.req{color:var(--ng)}
+table.plan{width:100%;border-collapse:collapse;font-size:13px;text-align:center}
+table.plan th,table.plan td{border:1px solid var(--bd);padding:6px 4px}
+table.plan th{background:#f3f4f6;font-weight:600}
+.st-acc{background:#dcfce7;color:var(--ok);font-weight:700}.st-rej{background:#fee2e2;color:var(--ng);font-weight:700}
+.grp{font-size:14px;font-weight:700;margin:18px 2px 8px;display:flex;justify-content:space-between;align-items:center}
+.grp small{color:var(--mu);font-weight:500;font-size:12px}
+.item{background:#fff;border:1px solid var(--bd);border-left:5px solid #cbd5e1;border-radius:10px;padding:12px;margin-bottom:10px}
+.item.ok{border-left-color:var(--ok)}.item.ng{border-left-color:var(--ng)}
+.item.miss{box-shadow:0 0 0 2px #fca5a5}
+.i-head{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.i-id{font-weight:700;margin-right:6px}
+.i-vi{font-weight:600;line-height:1.35}
+.i-en{font-size:12px;color:var(--mu);margin-top:3px;line-height:1.4}
+.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.b-CR{background:#fee2e2;color:#991b1b}.b-MAJ{background:#ffedd5;color:#9a3412}.b-MIN{background:#fef9c3;color:#854d0e}.b-OBS{background:#e0f2fe;color:#075985}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.seg button{padding:11px;border:2px solid #d1d5db;background:#fff;border-radius:9px;font-size:15px;font-weight:700;color:var(--mu)}
+.seg button.on-ok{background:#dcfce7;border-color:var(--ok);color:var(--ok)}
+.seg button.on-ng{background:#fee2e2;border-color:var(--ng);color:var(--ng)}
+.ng-box{display:grid;grid-template-columns:110px 1fr;gap:10px;margin-bottom:10px}
+.photos{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ph{position:relative;width:78px;height:78px;border-radius:8px;overflow:hidden;border:1px solid var(--bd);background:#f3f4f6}
+.ph img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.ph .rm{position:absolute;top:2px;right:2px;background:#000a;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:13px;line-height:1}
+.ph .stt{position:absolute;bottom:0;left:0;right:0;font-size:10px;text-align:center;color:#fff;background:#0009}
+.ph.err{border-color:var(--ng)}
+.cam{width:78px;height:78px;border:2px dashed #94a3b8;border-radius:8px;background:#f8fafc;font-size:12px;color:#475569;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.cam.need{border-color:var(--ng);color:var(--ng);background:#fef2f2}
+.cam span{font-size:22px}
+.pgal{font-size:12px;color:var(--mu);margin-top:6px}.pgal a{color:var(--pri);cursor:pointer;text-decoration:underline}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--bd);padding:10px 14px;z-index:50;box-shadow:0 -4px 14px #0000000f}
+.bar-in{max-width:860px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.bar-st{font-size:12px;color:var(--mu);line-height:1.5}.bar-st b{color:var(--tx)}
+.bar-res{font-weight:800;padding:6px 12px;border-radius:8px;font-size:13px}
+.rows .r{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px;border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;background:#fff;flex-wrap:wrap}
+.r-main{min-width:200px;flex:1}.r-main b{font-size:15px}.r-sub{font-size:12px;color:var(--mu);margin-top:3px;line-height:1.5}
+.r-act{display:flex;gap:6px;flex-wrap:wrap}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px;max-height:190px;overflow:auto}
+.pill{display:flex;align-items:center;gap:6px;padding:4px 10px;background:#f3f4f6;border:1px solid var(--bd);border-radius:99px;font-size:13px}
+.pill button{background:none;border:none;color:#9ca3af;font-size:16px;line-height:1}.pill button:hover{color:var(--ng)}
+.toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#111827;color:#fff;border-radius:10px;padding:11px 16px;font-size:13px;max-width:92vw;z-index:9999;transition:opacity .2s,transform .2s}
+.toast.hide{opacity:0;transform:translate(-50%,-30px);pointer-events:none}.toast.error{background:#991b1b}.toast.success{background:#166534}
+.lb{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;z-index:999}.lb.open{display:flex}
+.lb img{max-width:94vw;max-height:90vh;border-radius:8px}
+.edit-banner{background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.loading{text-align:center;padding:40px;color:var(--mu)}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #d1d5db;border-top-color:var(--pri);border-radius:50%;animation:s .8s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes s{to{transform:rotate(360deg)}}
+.setup{max-width:520px;margin:50px auto;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:26px}
+.setup h2{margin-bottom:8px}.setup p{color:var(--mu);font-size:13px;line-height:1.7;margin-bottom:14px}
+code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:12px}
+@media(max-width:560px){.grid,.grid3{grid-template-columns:1fr}.ng-box{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="setup" class="shell" style="display:none"><div class="setup">
+  <h2>⚙️ Kết nối dữ liệu</h2>
+  <p>Dán URL <b>Web App</b> của Google Apps Script (kết thúc bằng <code>/exec</code>). URL chỉ lưu trong trình duyệt này.</p>
+  <input id="url-in" placeholder="https://script.google.com/macros/s/.../exec" style="margin-bottom:12px">
+  <button class="btn-pri" onclick="saveUrl()">Kết nối</button>
+</div></div>
+
+<div id="app" class="shell" style="display:none">
+  <div class="header">
+    <div><div class="h-title">🔦 OQC – Kiểm tra hàng thành phẩm</div><div class="h-sub">WI-QC-022/003 · ANSI/ASQ Z1.4 · Mỗi hạng mục bắt buộc có ảnh bằng chứng</div></div>
+    <button class="btn" onclick="resetUrl()" title="Đổi kết nối">⚙️</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" id="t-entry" onclick="tab('entry')">📝 Nhập kiểm tra</button>
+    <button class="tab" id="t-hist" onclick="tab('hist')">📂 Lịch sử &amp; Xuất báo cáo</button>
+    <button class="tab" id="t-list" onclick="tab('list')">🗂 Danh mục</button>
+  </div>
+
+  <!-- ENTRY -->
+  <div id="p-entry">
+    <div id="edit-banner"></div>
+    <div class="card"><h3>Thông tin chung</h3>
+      <div class="grid">
+        <div><label class="lbl">Model (FIL code) <span class="req">*</span></label><input id="f-model" list="dl-models" autocomplete="off" placeholder="Gõ để tìm model…" oninput="onInfo()"><datalist id="dl-models"></datalist></div>
+        <div><label class="lbl">PO#</label><input id="f-po" oninput="onInfo()"></div>
+        <div><label class="lbl">Khách hàng</label><input id="f-customer" list="dl-customers" autocomplete="off" oninput="onInfo()"><datalist id="dl-customers"></datalist></div>
+        <div><label class="lbl">Line # <span class="req">*</span></label><select id="f-line" onchange="onInfo()"></select></div>
+        <div><label class="lbl">Ngày sản xuất</label><input type="date" id="f-prod" onchange="onInfo()"></div>
+        <div><label class="lbl">Ngày kiểm tra <span class="req">*</span></label><input type="date" id="f-date" onchange="onInfo()"></div>
+        <div><label class="lbl">Số lượng lô (QTY, pcs) <span class="req">*</span></label><input type="number" inputmode="numeric" min="1" id="f-lot" oninput="onInfo()"></div>
+        <div><label class="lbl">Mức kiểm tra Z1.4 (General)</label><select id="f-level" onchange="onInfo()"><option value="I" selected>I (mặc định)</option><option value="II">II</option><option value="III">III</option></select></div>
+        <div><label class="lbl">Người kiểm tra <span class="req">*</span></label><select id="f-inspector" onchange="onInfo()"></select></div>
+        <div><label class="lbl">Người duyệt</label><select id="f-reviewer" onchange="onInfo()"></select></div>
+      </div>
+    </div>
+
+    <div class="card"><h3>Phương án lấy mẫu – ANSI/ASQ Z1.4 <span id="plan-letter" style="text-transform:none"></span></h3>
+      <div style="overflow-x:auto"><table class="plan" id="plan"></table></div>
+      <div id="plan-note" class="h-sub" style="margin-top:8px"></div>
+    </div>
+
+    <div id="items"></div>
+
+    <div class="card"><h3>Kết luận &amp; xử lý</h3>
+      <label class="lbl">Solution</label>
+      <select id="f-solution" onchange="onInfo()"><option value="">— Không —</option><option>Rework / repair</option><option>Accepted by concession</option><option>Others</option></select>
+      <label class="lbl" style="margin-top:10px">Ghi chú xử lý / Others</label><input id="f-solnote" oninput="onInfo()">
+      <label class="lbl" style="margin-top:10px">Ghi chú chung</label><textarea id="f-notes" oninput="onInfo()"></textarea>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="p-hist" style="display:none">
+    <div class="card"><div class="grid3">
+      <div><label class="lbl">Từ ngày</label><input type="date" id="h-from"></div>
+      <div><label class="lbl">Đến ngày</label><input type="date" id="h-to"></div>
+      <div><label class="lbl">Model</label><input id="h-model" placeholder="Tìm model…"></div>
+    </div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="loadHist()">🔍 Tìm</button><button class="btn" onclick="clearHist()">✕ Xóa lọc</button></div></div>
+    <div id="hist" class="rows"></div>
+  </div>
+
+  <!-- LISTS -->
+  <div id="p-list" style="display:none">
+    <div id="lists"></div>
+    <div class="card"><h3>Hạng mục kiểm tra</h3><div class="h-sub" style="font-size:13px;line-height:1.6">Danh sách hạng mục (và cấp lỗi CR/MAJ/MIN/OBS) nằm ở tab <b>OQC_Items</b> trong Google Sheet. Sửa cột <code>class</code>, hoặc đặt cột <code>active</code> = FALSE để ẩn hạng mục; mở lại app để cập nhật.</div></div>
+  </div>
+</div>
+
+<div class="bar" id="bar" style="display:none"><div class="bar-in">
+  <div class="bar-st" id="bar-st"></div>
+  <div style="display:flex;gap:10px;align-items:center;flex:1;justify-content:flex-end;min-width:260px"><span id="bar-res"></span>
+    <button class="btn-pri" id="btn-save" style="width:auto;min-width:170px" onclick="save()">☁ Lưu báo cáo</button></div>
+</div></div>
+<div class="lb" id="lb" onclick="this.classList.remove('open')"><img id="lb-img" alt=""></div>
+<div class="toast hide" id="toast"></div>
+<input type="file" id="cam-in" accept="image/*" capture="environment" style="display:none">
+<input type="file" id="gal-in" accept="image/*" multiple style="display:none">
+
+<script>
+"use strict";
+const LS_KEY = "oqc_app_url_v1";
+let API = localStorage.getItem(LS_KEY) || "";
+const CLASSES = [{code:"CR/A",key:"CR",name:"Critical",aql:0},{code:"MAJ/B",key:"MAJ",name:"Major",aql:0.65},{code:"MIN/C",key:"MIN",name:"Minor",aql:1.5},{code:"OBS/D",key:"OBS",name:"Observation",aql:6.5}];
+// ── ANSI/ASQ Z1.4 single sampling, normal (khớp Code.gs & sheet Z1.4 của file Excel) ──
+const Z={LETTERS:"ABCDEFGHJKLMNPQR".split(""),SIZES:[2,3,5,8,13,20,32,50,80,125,200,315,500,800,1250,2000],
+ BOUNDS:[1,9,16,26,51,91,151,281,501,1201,3201,10001,35001,150001,500001],
+ LVL:{I:"AABCCDEFGHJKLMN",II:"ABCDEFGHJKLMNPQ",III:"BCDEFGHJKLMNPQR"},
+ L0:{"0.065":12,"0.1":11,"0.15":10,"0.25":9,"0.4":8,"0.65":7,"1":6,"1.5":5,"2.5":4,"4":3,"6.5":2},ACSEQ:[1,2,3,5,7,10,14,21]};
+function z14(lot,level,aql){let r=0;for(let i=0;i<Z.BOUNDS.length;i++)if(lot>=Z.BOUNDS[i])r=i;
+ const letter=(Z.LVL[level]||Z.LVL.I)[r],i=Z.LETTERS.indexOf(letter)+1,l0=Z.L0[String(aql)],k=i-l0;let n,ac;
+ if(k<=1){n=Z.SIZES[l0-1];ac=0}else{ac=Z.ACSEQ[Math.min(k-2,7)];n=Z.SIZES[i-1]}
+ return{letter,n:Math.min(n,lot),ac,re:ac+1,full:n>=lot}}
+
+let CFG={items:[],lists:{models:[],customers:[],inspectors:[],reviewers:[]}};
+let S={editId:null,res:{}};      // res[itemId] = {result:'OK'|'NG'|'', qty:'', desc:'', photos:[{key,id,dataUrl,w,h,status}]}
+let camTarget=null,uid=0;
+
+// ── helpers ──
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+let tt;function toast(m,t){const e=$("toast");e.textContent=m;e.className="toast "+(t||"");clearTimeout(tt);tt=setTimeout(()=>e.classList.add("hide"),t==="error"?5000:2600)}
+async function apiGet(p){const qs=Object.entries(p).map(([k,v])=>k+"="+encodeURIComponent(v)).join("&");
+ const r=await fetch(API+"?"+qs,{redirect:"follow",cache:"no-store"});const t=await r.text();
+ try{return JSON.parse(t)}catch(e){throw new Error("Phản hồi không hợp lệ (Apps Script đã deploy phiên bản mới chưa?): "+t.slice(0,100))}}
+async function apiPost(p){const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(p),redirect:"follow"});const t=await r.text();
+ try{return JSON.parse(t)}catch(e){throw new Error("Phản hồi không hợp lệ: "+t.slice(0,100))}}
+
+// ── init ──
+window.onload=()=>{ if(!API){$("setup").style.display="block";return} start() };
+function saveUrl(){const u=$("url-in").value.trim();if(!/^https:\/\//.test(u)){toast("URL không hợp lệ","error");return}localStorage.setItem(LS_KEY,u);API=u;$("setup").style.display="none";start()}
+function resetUrl(){if(confirm("Đổi URL kết nối?")){localStorage.removeItem(LS_KEY);location.reload()}}
+async function start(){
+ $("app").style.display="block";$("bar").style.display="flex";
+ $("items").innerHTML='<div class="loading"><span class="spin"></span>Đang tải danh mục…</div>';
+ $("f-line").innerHTML='<option value="">—</option>'+Array.from({length:12},(_,i)=>`<option>${i+1}</option>`).join("");
+ try{const r=await apiGet({action:"getConfig"});if(!r.ok)throw new Error(r.error);CFG.items=r.items;CFG.lists=r.lists}
+ catch(e){$("items").innerHTML='<div class="loading" style="color:#b91c1c">Không tải được dữ liệu: '+esc(e.message)+'</div>';return}
+ newForm();renderLists();
+}
+function tab(t){["entry","hist","list"].forEach(x=>{$("p-"+x).style.display=x===t?"block":"none";$("t-"+x).classList.toggle("active",x===t)});
+ $("bar").style.display=t==="entry"?"flex":"none"; if(t==="hist")loadHist()}
+
+// ── form ──
+function fillSelect(id,arr,ph){const cur=$(id).value;$(id).innerHTML=`<option value="">${ph}</option>`+arr.map(x=>`<option>${esc(x)}</option>`).join("");$(id).value=cur}
+function fillLists(){
+ $("dl-models").innerHTML=CFG.lists.models.map(x=>`<option value="${esc(x)}">`).join("");
+ $("dl-customers").innerHTML=CFG.lists.customers.map(x=>`<option value="${esc(x)}">`).join("");
+ fillSelect("f-inspector",CFG.lists.inspectors,"— Chọn —");fillSelect("f-reviewer",CFG.lists.reviewers,"— Chọn —")}
+function newForm(){
+ S={editId:null,res:{}};CFG.items.forEach(it=>S.res[it.id]={result:"",qty:"",desc:"",photos:[]});
+ ["f-model","f-po","f-customer","f-prod","f-lot","f-notes","f-solnote"].forEach(i=>$(i).value="");
+ $("f-line").value="";$("f-level").value="I";$("f-solution").value="";$("f-date").value=today();
+ fillLists();$("f-inspector").value="";$("f-reviewer").value="";
+ renderBanner();renderItems();onInfo()}
+function renderBanner(){$("edit-banner").innerHTML=S.editId?`<div class="edit-banner"><div>✏️ Đang <b>sửa</b> báo cáo <b>${esc(S.editId)}</b></div><button class="btn" onclick="if(confirm('Bỏ sửa và tạo phiếu mới?'))newForm()">Hủy sửa</button></div>`:""}
+
+function info(){return{model:$("f-model").value.trim(),po:$("f-po").value.trim(),customer:$("f-customer").value.trim(),line:$("f-line").value,
+ productionDate:$("f-prod").value,inspectionDate:$("f-date").value,lotQty:parseInt($("f-lot").value,10)||0,level:$("f-level").value,
+ inspector:$("f-inspector").value,reviewer:$("f-reviewer").value,solution:$("f-solution").value,solutionNote:$("f-solnote").value.trim(),notes:$("f-notes").value.trim()}}
+
+function defects(){const d={CR:0,MAJ:0,MIN:0,OBS:0};
+ CFG.items.forEach(it=>{const c=CLASSES.find(x=>x.code===it.cls);const r=S.res[it.id];if(c&&r&&r.result==="NG")d[c.key]+=parseInt(r.qty,10)||0});return d}
+function plans(){const i=info();if(i.lotQty<1)return null;const o={};let mx=0,L="";
+ CLASSES.forEach(c=>{if(c.aql>0){o[c.key]=z14(i.lotQty,i.level,c.aql);mx=Math.max(mx,o[c.key].n);L=o[c.key].letter}});
+ CLASSES.forEach(c=>{if(!(c.aql>0))o[c.key]={letter:L,n:mx,ac:0,re:1,full:mx>=i.lotQty}}); // AQL 0: zero tolerance
+ return o}
+
+function onInfo(){renderPlan();updateBar()}
+function renderPlan(){
+ const P=plans(),d=defects();let h="<tr><th></th>"+CLASSES.map(c=>`<th>${c.code}<br><span style="font-weight:400">${c.name}</span></th>`).join("")+"</tr>";
+ const row=(l,f)=>"<tr><th style='text-align:left'>"+l+"</th>"+CLASSES.map(c=>"<td"+f(c)[1]+">"+f(c)[0]+"</td>").join("")+"</tr>";
+ h+=row("AQL",c=>[c.aql===0?"0":c.aql.toFixed(c.aql<1?2:1),""]);
+ h+=row("Số mẫu kiểm tra (n)",c=>[P?`<b>${P[c.key].n}</b>${P[c.key].full?" <small>(100%)</small>":""}`:"–",""]);
+ h+=row("Ac / Re",c=>[P?P[c.key].ac+" / "+P[c.key].re:"–",""]);
+ h+=row("Số lỗi ghi nhận",c=>[d[c.key],""]);
+ h+=row("Kết quả",c=>{if(!P)return["–",""];const ok=d[c.key]<=P[c.key].ac;return[ok?"ACCEPT":"REJECT"," class='"+(ok?"st-acc":"st-rej")+"'"]});
+ $("plan").innerHTML=h;
+ $("plan-letter").textContent=P?"· Code letter "+P.CR.letter+" · Level "+info().level:"";
+ $("plan-note").textContent=P?`Cần kiểm tra tối đa ${Math.max(...CLASSES.map(c=>P[c.key].n))} pcs (mẫu lớn nhất). Mỗi cấp lỗi so với Ac của riêng nó.`:"Nhập số lượng lô để tự động tính cỡ mẫu và Ac/Re.";
+}
+
+// ── items ──
+function itemHTML(it){
+ const r=S.res[it.id],cls=it.cls.split("/")[0];
+ const ng=r.result==="NG";
+ return `<div class="item ${r.result==="OK"?"ok":ng?"ng":""}" id="it-${it.id.replace('.','_')}">
+ <div class="i-head"><div><div class="i-vi"><span class="i-id">${it.id}</span>${esc(it.shortVi)}</div><div class="i-en">${esc(it.requirement)}</div></div><span class="badge b-${cls}">${esc(it.cls)}</span></div>
+ <div class="seg"><button class="${r.result==="OK"?"on-ok":""}" onclick="setRes('${it.id}','OK')">✓ OK</button><button class="${ng?"on-ng":""}" onclick="setRes('${it.id}','NG')">✗ NG</button></div>
+ ${ng?`<div class="ng-box"><div><label class="lbl">SL lỗi (pcs) <span class="req">*</span></label><input type="number" inputmode="numeric" min="1" value="${esc(r.qty)}" oninput="S.res['${it.id}'].qty=this.value;this.classList.remove('bad');onInfo()"></div>
+ <div><label class="lbl">Mô tả lỗi <span class="req">*</span></label><input value="${esc(r.desc)}" oninput="S.res['${it.id}'].desc=this.value;this.classList.remove('bad')" placeholder="VD: xước lens, thiếu vít…"></div></div>`:""}
+ <label class="lbl">Ảnh bằng chứng <span class="req">* bắt buộc (≥1)</span></label>
+ <div id="ph-${it.id.replace('.','_')}">${photosHTML(it)}</div></div>`}
+function photosHTML(it){const r=S.res[it.id],need=!r.photos.length;
+ return `<div class="photos">${r.photos.map(p=>`<div class="ph ${p.status==="error"?"err":""}">${p.dataUrl?`<img src="${p.dataUrl}" onclick="zoom('${it.id}','${p.key}')">`:""}${p.status!=="done"?`<div class="stt">${p.status==="error"?"Lỗi – bấm ✕":p.status==="loading"?"Đang tải…":"Đang tải lên"}</div>`:""}<button class="rm" onclick="rmPhoto('${it.id}','${p.key}')">×</button></div>`).join("")}
+ <button class="cam ${need?"need":""}" onclick="addPhoto('${it.id}')"><span>📷</span>Chụp ảnh</button></div>
+ <div class="pgal"><a onclick="addPhoto('${it.id}',true)">Chọn ảnh từ thư viện</a></div>`}
+function redrawPhotos(id){const el=$("ph-"+id.replace(".","_")),it=CFG.items.find(x=>x.id===id);if(el)el.innerHTML=photosHTML(it);onInfo()}
+function renderItems(){
+ let h="",g=null;
+ CFG.items.forEach(it=>{ if(it.group!==g){g=it.group;const n=CFG.items.filter(x=>x.group===g).length;h+=`<div class="grp"><span>${esc(it.groupVi)} <small>· ${esc(g)}</small></span><small>${n} mục</small></div>`} h+=itemHTML(it)});
+ $("items").innerHTML=h}
+function redrawItem(id){const el=$("it-"+id.replace(".","_")),it=CFG.items.find(x=>x.id===id);const t=document.createElement("div");t.innerHTML=itemHTML(it);el.replaceWith(t.firstElementChild);onInfo()}
+function setRes(id,v){const r=S.res[id];r.result=v;if(v==="OK"){r.qty="";r.desc=""}redrawItem(id)}
+
+// ── photos ──
+$("cam-in").onchange=e=>{handleFiles(e.target.files);e.target.value=""};
+$("gal-in").onchange=e=>{handleFiles(e.target.files);e.target.value=""};
+function addPhoto(id,gallery){camTarget=id;(gallery?$("gal-in"):$("cam-in")).click()}
+function compress(file,max=1280,q=.72){return new Promise((res,rej)=>{const url=URL.createObjectURL(file),im=new Image();
+ im.onload=()=>{let w=im.naturalWidth,h=im.naturalHeight;const s=Math.min(1,max/Math.max(w,h));w=Math.round(w*s);h=Math.round(h*s);
+  const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(im,0,0,w,h);URL.revokeObjectURL(url);res({dataUrl:c.toDataURL("image/jpeg",q),w,h})};
+ im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("Không đọc được ảnh"))};im.src=url})}
+async function handleFiles(files){const id=camTarget;if(!id)return;
+ for(const f of Array.from(files)){const key="p"+(++uid);let c;
+  try{c=await compress(f)}catch(e){toast(e.message,"error");continue}
+  const p={key,id:null,dataUrl:c.dataUrl,w:c.w,h:c.h,status:"uploading"};S.res[id].photos.push(p);redrawPhotos(id);uploadPhoto(id,p)}}
+async function uploadPhoto(itemId,p,retry=0){
+ try{const r=await apiPost({action:"uploadPhoto",name:`${itemId}_${Date.now()}.jpg`,mime:"image/jpeg",w:p.w,h:p.h,data:p.dataUrl.split(",")[1]});
+  if(!r.ok)throw new Error(r.error);p.id=r.id;p.status="done"}
+ catch(e){ if(retry<2){return uploadPhoto(itemId,p,retry+1)} p.status="error";toast("Tải ảnh lỗi: "+e.message,"error")}
+ if(S.res[itemId].photos.includes(p))redrawPhotos(itemId)}
+function rmPhoto(itemId,key){const r=S.res[itemId];r.photos=r.photos.filter(p=>p.key!==key);redrawPhotos(itemId)}
+function zoom(itemId,key){const p=S.res[itemId].photos.find(x=>x.key===key);if(p&&p.dataUrl){$("lb-img").src=p.dataUrl;$("lb").classList.add("open")}}
+async function loadThumbs(itemList){ // tải ảnh đã lưu khi sửa báo cáo (song song 3 luồng)
+ const q=[];itemList.forEach(it=>S.res[it.id].photos.forEach(p=>{if(!p.dataUrl)q.push([it.id,p])}));
+ const worker=async()=>{while(q.length){const [iid,p]=q.shift();try{const r=await apiGet({action:"getPhoto",id:p.id});if(r.ok){p.dataUrl=r.data;p.status="done"}else p.status="error"}catch(e){p.status="error"}
+  if(S.res[iid]&&S.res[iid].photos.includes(p))redrawPhotos(iid)}};
+ await Promise.all([worker(),worker(),worker()])}
+
+// ── validate / save ──
+function validate(mark){
+ const i=info(),miss=[];
+ [["f-model",i.model],["f-line",i.line],["f-date",i.inspectionDate],["f-lot",i.lotQty>=1],["f-inspector",i.inspector]].forEach(([id,v])=>{ if(mark)$(id).classList.toggle("bad",!v); if(!v)miss.push(id)});
+ const itemMiss=[];let busy=0,photoCount=0,done=0;
+ CFG.items.forEach(it=>{const r=S.res[it.id];let bad=false;
+  if(!r.result)bad=true;
+  if(r.result==="NG"&&(!(parseInt(r.qty,10)>=1)||!r.desc.trim()))bad=true;
+  if(!r.photos.length)bad=true;
+  if(r.photos.some(p=>p.status!=="done")){bad=true;busy++}
+  if(r.photos.length)photoCount++; if(r.result)done++;
+  if(bad)itemMiss.push(it.id)});
+ return{info:i,miss,itemMiss,busy,photoCount,done}}
+function updateBar(){
+ const v=validate(),total=CFG.items.length,P=plans(),d=defects();
+ let res="";if(P){const rej=CLASSES.some(c=>d[c.key]>P[c.key].ac);res=`<span class="bar-res ${rej?"st-rej":"st-acc"}">${rej?"REJECT":"ACCEPT"}</span>`}
+ $("bar-res").innerHTML=res;
+ $("bar-st").innerHTML=`Kết quả: <b>${v.done}/${total}</b> · Ảnh: <b>${v.photoCount}/${total}</b>`+(v.busy?` · <span style="color:#b45309">đang tải ${v.busy} mục…</span>`:"")
+ // validation marks only after user attempted save (see save)
+ CFG.items.forEach(it=>{const el=$("it-"+it.id.replace(".","_"));if(el&&el.classList.contains("miss")&&!v.itemMiss.includes(it.id))el.classList.remove("miss")})}
+
+async function save(){
+ const v=validate(true);
+ if(v.miss.length||v.itemMiss.length){
+  CFG.items.forEach(it=>{const el=$("it-"+it.id.replace(".","_"));if(el)el.classList.toggle("miss",v.itemMiss.includes(it.id))});
+  if(v.miss.length){toast("Còn thiếu thông tin chung (ô đỏ)","error");$(v.miss[0]).scrollIntoView({behavior:"smooth",block:"center"})}
+  else{toast(v.busy?"Ảnh đang tải lên, vui lòng chờ…":`Còn ${v.itemMiss.length} hạng mục thiếu kết quả / ảnh / số lượng lỗi (viền đỏ)`,"error");
+   const el=$("it-"+v.itemMiss[0].replace(".","_"));el&&el.scrollIntoView({behavior:"smooth",block:"center"})}
+  return}
+ const btn=$("btn-save");btn.disabled=true;btn.textContent="Đang lưu…";
+ try{
+  const payload={action:"saveReport",report:Object.assign({id:S.editId},v.info),
+   results:CFG.items.map(it=>{const r=S.res[it.id];return{itemId:it.id,result:r.result,qty:r.result==="NG"?parseInt(r.qty,10):0,desc:r.desc.trim(),photos:r.photos.map(p=>p.id)}})};
+  const r=await apiPost(payload);if(!r.ok)throw new Error(r.error);
+  toast(`Đã lưu ${r.id} – ${r.result}`,"success");newForm();window.scrollTo({top:0,behavior:"smooth"})
+ }catch(e){toast("Lưu lỗi: "+e.message,"error")}
+ btn.disabled=false;btn.textContent="☁ Lưu báo cáo"}
+
+// ── history ──
+async function loadHist(){
+ $("hist").innerHTML='<div class="loading"><span class="spin"></span>Đang tải…</div>';
+ try{const r=await apiGet({action:"list",from:$("h-from").value,to:$("h-to").value,model:$("h-model").value.trim()});if(!r.ok)throw new Error(r.error);
+  if(!r.reports.length){$("hist").innerHTML='<div class="loading">Chưa có báo cáo nào.</div>';return}
+  $("hist").innerHTML=r.reports.map(x=>`<div class="r"><div class="r-main"><b>${esc(x.model)}</b> <span class="badge ${x.result==="REJECT"?"st-rej":"st-acc"}">${esc(x.result)}</span>
+   <div class="r-sub">${esc(x.inspectionDate)} · PO ${esc(x.po||"-")} · ${esc(x.customer||"-")} · Line ${esc(x.line)} · Lot ${esc(x.lotQty)} pcs · ${esc(x.inspector)}<br>Lỗi: CR ${x.def.CR} · MAJ ${x.def.MAJ} · MIN ${x.def.MIN} · OBS ${x.def.OBS}${x.exported?"<br>📄 "+esc(x.exported):""}</div></div>
+   <div class="r-act"><button class="btn" onclick="exportRep('${x.id}',this)">📤 Xuất báo cáo</button><button class="btn" onclick="editRep('${x.id}')">✏️ Sửa</button><button class="btn btn-red" onclick="delRep('${x.id}')">🗑</button></div></div>`).join("")}
+ catch(e){$("hist").innerHTML='<div class="loading" style="color:#b91c1c">'+esc(e.message)+'</div>'}}
+function clearHist(){["h-from","h-to","h-model"].forEach(i=>$(i).value="");loadHist()}
+async function exportRep(id,btn){
+ if(!confirm("Tạo sheet báo cáo + sheet Evidence (ảnh) mới trong Google Sheet?\nCó thể mất 20–60 giây."))return;
+ const old=btn.textContent;btn.disabled=true;btn.innerHTML='<span class="spin"></span>Đang xuất…';
+ try{const r=await apiPost({action:"exportReport",id});if(!r.ok)throw new Error(r.error);toast("Đã tạo: "+r.sheets.join(" + "),"success");
+  if(confirm("Xuất xong. Mở sheet báo cáo trong Google Sheet?"))window.open(r.url,"_blank");loadHist()}
+ catch(e){toast("Xuất lỗi: "+e.message,"error")}
+ btn.disabled=false;btn.textContent=old}
+async function delRep(id){if(!confirm("Xóa báo cáo "+id+" và toàn bộ ảnh? Không hoàn tác được."))return;
+ try{const r=await apiPost({action:"deleteReport",id});if(!r.ok)throw new Error(r.error);toast("Đã xóa","success");loadHist()}catch(e){toast(e.message,"error")}}
+async function editRep(id){
+ toast("Đang tải báo cáo…");
+ try{const r=await apiGet({action:"getReport",id});if(!r.ok)throw new Error(r.error);const R=r.report;
+  S={editId:id,res:{}};CFG.items.forEach(it=>S.res[it.id]={result:"",qty:"",desc:"",photos:[]});
+  r.results.forEach(x=>{if(S.res[x.itemId])S.res[x.itemId]={result:x.result,qty:x.qty||"",desc:x.desc||"",photos:(x.photos||[]).map(pid=>({key:"p"+(++uid),id:pid,dataUrl:null,w:0,h:0,status:"loading"}))}});
+  fillLists();
+  [["f-model",R.model],["f-po",R.po],["f-customer",R.customer],["f-line",R.line],["f-prod",R.productionDate],["f-date",R.inspectionDate],["f-lot",R.lotQty],["f-level",R.level],["f-inspector",R.inspector],["f-reviewer",R.reviewer],["f-solution",R.solution],["f-solnote",R.solutionNote],["f-notes",R.notes]].forEach(([i,v])=>$(i).value=v==null?"":v);
+  [["f-inspector",R.inspector],["f-reviewer",R.reviewer]].forEach(([i,v])=>{if(v&&$(i).value!==String(v)){$(i).insertAdjacentHTML("beforeend",`<option>${esc(v)}</option>`);$(i).value=v}});
+  tab("entry");renderBanner();renderItems();onInfo();window.scrollTo({top:0});loadThumbs(CFG.items)
+ }catch(e){toast("Lỗi: "+e.message,"error")}}
+
+// ── lists ──
+const LISTS=[["models","Model (FIL code)","Dán nhiều model, mỗi dòng 1 model"],["customers","Khách hàng",""],["inspectors","Người kiểm tra (QC)",""],["reviewers","Người duyệt",""]];
+function renderLists(){
+ $("lists").innerHTML=LISTS.map(([k,t,hint])=>`<div class="card"><h3>${t} <span style="text-transform:none;font-weight:400">(${CFG.lists[k].length})</span></h3>
+  <div class="pills">${CFG.lists[k].slice(0,k==="models"?300:999).map(n=>`<span class="pill">${esc(n)}<button onclick="rmList('${k}',decodeURIComponent('${encodeURIComponent(n)}'))">×</button></span>`).join("")||'<span class="h-sub">Chưa có</span>'}</div>
+  ${k==="models"&&CFG.lists[k].length>300?'<div class="h-sub">Chỉ hiển thị 300 model đầu.</div>':""}
+  <textarea id="add-${k}" placeholder="${hint||"Nhập tên, nhiều tên cách nhau bằng dòng mới"}" style="min-height:${k==="models"?90:48}px"></textarea>
+  <button class="btn" style="margin-top:8px" onclick="addList('${k}')">+ Thêm</button></div>`).join("");fillLists()}
+async function addList(k){const names=$("add-"+k).value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);if(!names.length)return;
+ try{const r=await apiPost({action:"addListItem",list:k,names});if(!r.ok)throw new Error(r.error);CFG.lists=r.lists;renderLists();toast(`Đã thêm ${r.added}`,"success")}catch(e){toast(e.message,"error")}}
+async function rmList(k,n){if(!confirm("Xóa «"+n+"» khỏi danh mục?"))return;
+ try{const r=await apiPost({action:"removeListItem",list:k,name:n});if(!r.ok)throw new Error(r.error);CFG.lists=r.lists;renderLists()}catch(e){toast(e.message,"error")}}
+</script>
+</body>
+</html>
