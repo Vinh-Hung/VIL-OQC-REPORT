@@ -169,7 +169,13 @@ code { background: #f5f5f5; padding: 1px 6px; border-radius: 4px; font-size: 12p
 
     <div id="items"></div>
 
-    <div class="card" style="margin-top:14px">
+    <div class="card" style="margin-top:14px" id="bc-card">
+      <div class="section-title">Scan barcode <span class="req">* bắt buộc đủ 3 ô</span></div>
+      <div class="hint" style="margin-bottom:10px">Dùng máy quét (mã tự điền vào ô, Enter để sang ô kế tiếp), nhập tay, hoặc bấm 📷 để quét bằng camera.</div>
+      <div id="bc-fields"></div>
+    </div>
+
+    <div class="card">
       <div class="section-title">Ảnh bằng chứng bắt buộc <span id="photo-count" class="hint"></span></div>
       <div class="photo-grid" id="photo-grid"></div>
     </div>
@@ -278,7 +284,7 @@ async function apiPost(payload) {
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function escJs(s) { return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
-function fmtDate(iso) { return (iso||"").split("-").reverse().join("/"); }
+function fmtDate(iso) { return String(iso||"").slice(0,10).split("-").reverse().join("/"); }
 function today() { var d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function showToast(msg, type) { clearTimeout(toastTimer); var t = $("toast"); t.textContent = msg; t.className = "toast " + (type || "success"); toastTimer = setTimeout(function(){ t.className = "toast hide"; }, 3600); }
 function switchTab(tab) {
@@ -321,7 +327,7 @@ function resetEntryForm() {
   ["f-fil","f-po","f-customer","f-prod","f-lot","f-inspector","f-reviewer","f-solnote","f-notes"].forEach(function(id){ $(id).value = ""; });
   $("f-line").value = ""; $("f-level").value = "I"; $("f-solution").value = ""; $("f-date").value = today();
   $("edit-banner").style.display = "none"; $("update-btn").style.display = "none"; $("submit-btn").textContent = "📄 Lưu & xuất báo cáo"; $("report-result").innerHTML = "";
-  renderItems(); renderPhotos(); onInfo();
+  renderItems(); renderBarcodes(); renderPhotos(); onInfo();
 }
 function info() {
   return { filCode: $("f-fil").value.trim(), po: $("f-po").value.trim(), customer: $("f-customer").value.trim(), line: $("f-line").value,
@@ -359,15 +365,13 @@ function itemHTML(it) {
    + '<div class="seg"><button class="'+(r.result==="OK"?"on-ok":"")+'" onclick="setRes(\''+it.id+'\',\'OK\')">✓ OK</button><button class="'+(ng?"on-ng":"")+'" onclick="setRes(\''+it.id+'\',\'NG\')">✗ NG</button></div>';
   if (ng) h += '<div class="ng-box"><div><label class="lbl">SL lỗi (pcs) <span class="req">*</span></label><input type="number" inputmode="numeric" min="1" value="'+esc(r.qty)+'" oninput="S.res[\''+it.id+'\'].qty=this.value;this.classList.remove(\'bad\');onInfo()"></div>'
    + '<div><label class="lbl">Mô tả lỗi</label><input type="text" value="'+esc(r.desc)+'" oninput="S.res[\''+it.id+'\'].desc=this.value" placeholder="VD: xước lens, thiếu vít…"></div></div>';
-  if (it.id === BARCODE_ITEM) {
-    h += '<div class="bc-box"><div class="lbl" style="margin-bottom:8px">Scan barcode <span class="req">* bắt buộc đủ 3 ô</span> — dùng máy quét (tự gõ vào ô) hoặc bấm 📷</div>'
-     + [["inner","Thùng inner"],["master","Thùng master"],["po","Tem PO"]].map(function(b, i, a){
-        return '<div class="scan-row"><label>'+b[1]+'</label><input type="text" id="bc-'+b[0]+'" value="'+esc(S.bc[b[0]])+'" autocomplete="off" placeholder="Scan barcode..." '
-          + 'oninput="S.bc[\''+b[0]+'\']=this.value.trim();this.classList.remove(\'bad\')" onkeydown="bcKey(event,\''+(a[i+1]?a[i+1][0]:"")+'\')">'
-          + '<button class="btn-sm" type="button" onclick="scanCam(\''+b[0]+'\')">📷</button></div>'; }).join("")
-     + '</div>';
-  }
   return h + '</div>';
+}
+function renderBarcodes() {
+  $("bc-fields").innerHTML = [["inner","Thùng inner"],["master","Thùng master"],["po","Tem PO"]].map(function(b, i, a){
+    return '<div class="scan-row"><label>'+b[1]+'</label><input type="text" id="bc-'+b[0]+'" value="'+esc(S.bc[b[0]])+'" autocomplete="off" placeholder="Scan barcode '+b[1].toLowerCase()+'..." '
+      + 'oninput="S.bc[\''+b[0]+'\']=this.value.trim();this.classList.remove(\'bad\')" onkeydown="bcKey(event,\''+(a[i+1]?a[i+1][0]:"")+'\')">'
+      + '<button class="btn-sm" type="button" onclick="scanCam(\''+b[0]+'\')">📷 Quét</button></div>'; }).join("");
 }
 function renderItems() {
   var h = "", g = null;
@@ -443,7 +447,7 @@ function validate(exportMode) {
   var itemMiss = [];
   ITEMS.forEach(function(it) { var r = S.res[it.id], bad = !r.result || (r.result === "NG" && !(parseInt(r.qty, 10) >= 1)); var el = $("it-" + it.id.replace(".","_")); if (el) el.classList.toggle("miss", bad); if (bad) itemMiss.push(it.id); });
   var bcMiss = [];
-  if (exportMode && ITEMS.some(function(it){ return it.id === BARCODE_ITEM; })) ["inner","master","po"].forEach(function(k){ var e = $("bc-" + k); if (!S.bc[k]) { bcMiss.push(k); if (e) e.classList.add("bad"); } });
+  if (exportMode) ["inner","master","po"].forEach(function(k){ var e = $("bc-" + k); if (!S.bc[k]) { bcMiss.push(k); if (e) e.classList.add("bad"); } });
   var photoMiss = exportMode ? PHOTO_SLOTS.filter(function(s){ return !S.photos[s.key]; }) : [];
   PHOTO_SLOTS.forEach(function(s){ var el = $("slot-" + s.key); if (el) el.classList.toggle("need", exportMode && !S.photos[s.key]); });
   return { info: i, miss: miss, itemMiss: itemMiss, bcMiss: bcMiss, photoMiss: photoMiss };
@@ -452,7 +456,7 @@ async function submitEntry(exportMode) {
   var v = validate(exportMode);
   if (v.miss.length) { showToast("Vui lòng nhập đủ FIL code / Line / Ngày / Số lượng lô / Người kiểm tra", "error"); $(v.miss[0]).scrollIntoView({behavior:"smooth",block:"center"}); return; }
   if (v.itemMiss.length) { showToast("Còn " + v.itemMiss.length + " hạng mục chưa có kết quả hoặc thiếu số lượng lỗi (viền đỏ)", "error"); $("it-" + v.itemMiss[0].replace(".","_")).scrollIntoView({behavior:"smooth",block:"center"}); return; }
-  if (v.bcMiss.length) { showToast("Cần scan đủ 3 barcode: thùng inner, thùng master, tem PO", "error"); $("bc-" + v.bcMiss[0]).scrollIntoView({behavior:"smooth",block:"center"}); return; }
+  if (v.bcMiss.length) { showToast("Cần scan đủ 3 barcode: thùng inner, thùng master, tem PO", "error"); $("bc-card").scrollIntoView({behavior:"smooth",block:"center"}); return; }
   if (v.photoMiss.length) { showToast("Thiếu ảnh bắt buộc: " + v.photoMiss.map(function(s){ return s.vi; }).join(", "), "error"); $("slot-" + v.photoMiss[0].key).scrollIntoView({behavior:"smooth",block:"center"}); return; }
 
   var payload = { action: "submit", export: !!exportMode, id: S.editId, report: v.info, barcodes: S.bc,
@@ -465,7 +469,7 @@ async function submitEntry(exportMode) {
     var r = await apiPost(payload);
     if (r.ok) {
       showToast(exportMode ? "✅ Đã lưu & tạo sheet: " + r.sheetName : "✅ Đã cập nhật dữ liệu");
-      if (exportMode) { var html = '<a class="result-link" href="'+esc(r.url)+'" target="_blank">📄 Mở sheet báo cáo "'+esc(r.sheetName)+'" →</a><a class="result-link" href="'+esc(r.evidenceUrl)+'" target="_blank" style="margin-top:4px">📷 Mở sheet ảnh "'+esc(r.evidenceName)+'" →</a>';
+      if (exportMode) { var html = '<a class="result-link" href="'+esc(r.url)+'" target="_blank">📄 Mở sheet báo cáo (kèm ảnh) "'+esc(r.sheetName)+'" →</a>';
         resetEntryForm(); $("report-result").innerHTML = html; }
       else resetEntryForm();
     } else { if (r.saved && r.id) { S.editId = r.id; $("update-btn").style.display = "block"; $("edit-banner").style.display = "flex"; $("edit-banner-text").textContent = "Đã lưu dữ liệu " + r.id + " nhưng xuất lỗi — bấm lưu lại để thử xuất tiếp."; } showToast("Lỗi: " + (r.error || "không xác định"), "error"); }
@@ -503,7 +507,7 @@ async function editById(id) {
       .forEach(function(p){ $(p[0]).value = p[1] == null ? "" : p[1]; });
     $("edit-banner").style.display = "flex"; $("edit-banner-text").textContent = "Đang sửa báo cáo " + id + " — muốn xuất lại báo cáo cần chụp lại đủ 12 ảnh.";
     $("update-btn").style.display = "block"; $("submit-btn").textContent = "📄 Lưu & xuất lại báo cáo mới";
-    renderItems(); renderPhotos(); onInfo(); switchTab("entry"); window.scrollTo(0, 0);
+    renderItems(); renderBarcodes(); renderPhotos(); onInfo(); switchTab("entry"); window.scrollTo(0, 0);
   } catch(e) { showToast("Lỗi: " + e.message, "error"); }
 }
 async function deleteById(id) {
